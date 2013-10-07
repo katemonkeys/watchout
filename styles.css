@@ -10,14 +10,22 @@
   margin-bottom: 40px;
 }
 
+h1 {
+  color:white;
+}
+
+h3 {
+  color:white;
+}
+
 #scores {
   padding: 10px;
   position: absolute;
   top: 40px;
   right: 40px;
-  background: #ddd;
+  background: #f00;
   text-align: right;
-  border-radius: 3px;
+  border-radius: 40px;
 }
 #scores span {
   display: inline-block;
@@ -43,6 +51,14 @@
   stroke-width: 1.5px;
 }
 
-circle.area {
-  /*fill: #ccc;*/
+circle {
+-webkit-animation: spin 1s infinite alternate;
+-moz-animation: spin 1s infinite alternate;
+-o-animation: spin 1s infinite alternate;
+-ms-animation: spin 1s infinite alternate;
+}
+
+@-webkit-keyframes spin {
+0% { -webkit-transform: rotate(-45deg);}
+100% { -webkit-transform: rotate(45deg);}
 }

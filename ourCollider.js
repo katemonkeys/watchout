@@ -1,11 +1,11 @@
 // (function() {
 var axes, enemyData,gameBoard, gameOptions,gameStats,play,render,Player;
-__bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 gameOptions = {
   height: 450,
   width: 700,
-  nEnemies: 30,
+  nEnemies: 20,
   padding: 20
 };
 
@@ -21,37 +21,14 @@ axes = {
 
 gameBoard = d3.select('.container').append('svg:svg').attr('width', gameOptions.width).attr('height', gameOptions.height);
 
-// Player = function(gameOptions){
-//   return {
-//     x:gameOptions.width * 0.5,
-//     y:gameOptions.height * 0.5,
-//     r:5,
-//     path: 'm-7.5,1.62413c0,-5.04095 4.08318,-9.12413 9.12414,-9.12413c5.04096,0 9.70345,5.53145 11.87586,9.12413c-2.02759,2.72372 -6.8349,9.12415 -11.87586,9.12415c-5.04096,0 -9.12414,-4.08318 -9.12414,-9.12415z'
-//   };
-// };
+  var updateScore = function() {
+    return d3.select('#current-score').text(gameStats.score.toString());
+  };
 
-// Player.prototype.getX = function(){return this.x;};
-
-// Player.prototype.getY = function(){return this.y;};
-
-// Player.prototype.setX = function(x){this.x = x;};
-
-// Player.prototype.setY = function(y){this.y = y;};
-
-// Player.prototype.render = function(to) {
-//   this.el = to.append('svg:path').attr('d', this.path).attr('fill', 'red');
-//   this.transform({
-//     x: gameOptions.width * 0.5,
-//     y: gameOptions.height * 0.5
-//   });
-//   return this;
-// };
-
-// Player.prototype.transform = function(opts){
-//   this.setX(opts.x || this.x);
-//   this.setY(opts.y || this.y);
-//   return this.el;
-// };
+  var updateBestScore = function() {
+    gameStats.bestScore = _.max([gameStats.bestScore, gameStats.score]);
+    return d3.select('#best-score').text(gameStats.bestScore.toString());
+  };
 
  Player = (function() {
 
@@ -99,8 +76,6 @@ gameBoard = d3.select('.container').append('svg:svg').attr('width', gameOptions.
       var maxX, minX;
       minX = this.gameOptions.padding;
       maxX = this.gameOptions.width - this.gameOptions.padding;
-      if (x <= minX) x = minX;
-      if (x >= maxX) x = maxX;
       return this.x = x;
     };
 
@@ -112,8 +87,6 @@ gameBoard = d3.select('.container').append('svg:svg').attr('width', gameOptions.
       var maxY, minY;
       minY = this.gameOptions.padding;
       maxY = this.gameOptions.height - this.gameOptions.padding;
-      if (y <= minY) y = minY;
-      if (y >= maxY) y = maxY;
       return this.y = y;
     };
 
@@ -172,7 +145,7 @@ enemyData = function() {
 
 
 render = function(enemy_data) {
-  var enemies,tweenWithoutCollision;
+  var checkCollision, enemies, onCollision, tweenWithCollisionDetection;
 
   enemies = gameBoard.selectAll('circle').data(enemy_data, function(d) {return d.id;});
 
@@ -180,7 +153,23 @@ render = function(enemy_data) {
   enemies.enter().append('circle').attr("cx",function(enemyData){return axes.x(enemyData.x);})
     .attr("cy",function(enemyData){return axes.y(enemyData.y);}).attr("r",10);
 
-  tweenWithoutCollision = function(endData) {
+  checkCollision = function(enemy, collidedCallback) {
+    return _(players).each(function(player) {
+      var radiusSum, separation, xDiff, yDiff;
+      radiusSum = parseFloat(enemy.attr('r')) + player.r;
+      xDiff = parseFloat(enemy.attr('cx')) - player.x;
+      yDiff = parseFloat(enemy.attr('cy')) - player.y;
+      separation = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
+      if (separation < radiusSum) return collidedCallback(player, enemy);
+    });
+  };
+  onCollision = function() {
+    updateBestScore();
+    gameStats.score = 0;
+    return updateScore();
+  };
+
+  tweenWithCollisionDetection = function(endData) {
     var endPos, enemy, startPos;
     enemy = d3.select(this);
     startPos = {
@@ -193,7 +182,7 @@ render = function(enemy_data) {
     };
     return function(t) {
       var enemyNextPos;
-//      checkCollision(enemy, onCollision);
+      checkCollision(enemy, onCollision);
       enemyNextPos = {
         x: startPos.x + (endPos.x - startPos.x) * t,
         y: startPos.y + (endPos.y - startPos.y) * t
@@ -201,23 +190,23 @@ render = function(enemy_data) {
       return enemy.attr('cx', enemyNextPos.x).attr('cy', enemyNextPos.y);
     };
   };
-  return enemies.transition().duration(2000).tween('custom', tweenWithoutCollision);
+  return enemies.transition().duration(500).tween('custom', tweenWithCollisionDetection);
 };
 
 play = function() {
-  var gameTurn;
+  var gameTurn,increaseScore;
   gameTurn = function() {
     var newEnemyPositions;
     newEnemyPositions = enemyData();
     return render(newEnemyPositions);
   };
-  // increaseScore = function() {
-  //   gameStats.score += 1;
-  //   return updateScore();
-  // };
+  increaseScore = function() {
+    gameStats.score += 1;
+    return updateScore();
+  };
   gameTurn();
   setInterval(gameTurn, 2000);
-  //return setInterval(increaseScore, 50);
+  return setInterval(increaseScore, 50);
 };
 
 play();
